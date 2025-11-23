@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Скопировать файлы проекта
+COPY . /app
+
+# Установить зависимости
+RUN pip install --no-cache-dir -r requirements.txt
+
+ENV PYTHONUNBUFFERED=1
+
+# Запускаем только API, внутри которого живёт Telegram-бот
+CMD ["uvicorn", "web.api:app", "--host", "0.0.0.0", "--port", "8000"]

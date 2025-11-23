@@ -1,20 +1,44 @@
-from fastapi import FastAPI, Request
-import json
+
+# web/api.py
 import asyncio
-from bot import application  # импорт нашего Telegram-бота
+
+from fastapi import FastAPI, Request
+from telegram import Update
+
+from bot import create_application
 
 app = FastAPI()
 
+# Создаём одно приложение Telegram на весь процесс
+application = create_application()
+
+
+@app.on_event("startup")
+async def on_startup():
+    # Инициализация Telegram-приложения
+    await application.initialize()
+    await application.start()
+    print("✅ Telegram Application started (webhook mode).")
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    await application.stop()
+    await application.shutdown()
+    print("🛑 Telegram Application stopped.")
+
+
 @app.get("/")
-def home():
-    return {"status": "ok", "message": "API работает"}
+async def root():
+    return {"status": "ok", "message": "Chisinau-PORTAL API работает"}
+
 
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
+    """Эндпоинт, куда Telegram будет слать обновления."""
     data = await request.json()
+    update = Update.de_json(data, application.bot)
+    # Передаём update в PTB
+    await application.process_update(update)
+    return {"ok": True}
 
-    # Передаём обновление в Telegram bot application
-    update = application.update_queue
-    await update.put(data)
-
-    return {"status": "received"}
