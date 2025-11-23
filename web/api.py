@@ -1,44 +1,46 @@
-
 # web/api.py
-import asyncio
 
+import asyncio
 from fastapi import FastAPI, Request
 from telegram import Update
 
-from bot import create_application
+from bot import create_app
 
 app = FastAPI()
 
-# Создаём одно приложение Telegram на весь процесс
-application = create_application()
+# Создаём Telegram Application одно на весь сервер
+application = create_app()
 
 
 @app.on_event("startup")
 async def on_startup():
-    # Инициализация Telegram-приложения
+    """Запускаем Telegram-бота при запуске Railway."""
     await application.initialize()
     await application.start()
-    print("✅ Telegram Application started (webhook mode).")
+    print("✅ Telegram bot started in WEBHOOK MODE")
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
+    """Корректная остановка."""
     await application.stop()
     await application.shutdown()
-    print("🛑 Telegram Application stopped.")
+    print("🛑 Telegram bot stopped")
 
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "Chisinau-PORTAL API работает"}
+    return {"status": "ok", "message": "API работает"}
 
 
 @app.post("/webhook")
-async def telegram_webhook(request: Request):
-    """Эндпоинт, куда Telegram будет слать обновления."""
+async def webhook(request: Request):
+    """Telegram отправляет обновления сюда."""
     data = await request.json()
-    update = Update.de_json(data, application.bot)
-    # Передаём update в PTB
-    await application.process_update(update)
-    return {"ok": True}
 
+    update = Update.de_json(data, application.bot)
+
+    # Передаём обновление в Telegram bot
+    await application.process_update(update)
+
+    return {"ok": True}
